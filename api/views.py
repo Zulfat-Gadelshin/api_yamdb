@@ -12,6 +12,7 @@ from api import serializers
 from .filters import TitleFilter
 from .models import Category, Genre, Title
 from .permissions import AdminOrUser, IsAdminOrReadOnly
+from .viewsets import CustomViewset
 
 User = get_user_model()
 
@@ -96,7 +97,7 @@ class AuthTokenViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_201_CREATED)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(CustomViewset):
     queryset = Category.objects.all()
     serializer_class = serializers.CategorySerializer
     permission_classes = (
@@ -104,28 +105,20 @@ class CategoryViewSet(viewsets.ModelViewSet):
     )
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
+    lookup_field = 'slug'
     search_fields = ['name', ]
 
-    def destroy(self, request, *args, **kwargs):   # не работает
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
-
-class GenreViewSet(viewsets.ModelViewSet):
+class GenreViewSet(CustomViewset):
     queryset = Genre.objects.all()
     serializer_class = serializers.GenreSerializer
     permission_classes = (
         IsAdminOrReadOnly,
     )
     pagination_class = PageNumberPagination
+    lookup_field = 'slug'
     filter_backends = (filters.SearchFilter,)
-    search_fields = ['name', ]
-
-    def destroy(self, request, *args, **kwargs):  # не работает
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    search_fields = ['name', 'slug', ]
 
 
 class TitleViewSet(viewsets.ModelViewSet):
