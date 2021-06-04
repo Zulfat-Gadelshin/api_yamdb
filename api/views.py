@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, permissions, status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -8,6 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from api import serializers
 
+from .filters import TitleFilter
 from .models import Category, Genre, Title
 from .permissions import AdminOrUser, IsAdminOrReadOnly
 
@@ -132,9 +134,8 @@ class TitleViewSet(viewsets.ModelViewSet):
         IsAdminOrReadOnly,
     )
     pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ['name', 'year', 'category__slug', 'genre__slug', ]
-    # не делает фильтр по жанрам?
+    filter_backends = (filters.SearchFilter, DjangoFilterBackend, )
+    filter_class = TitleFilter
 
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
