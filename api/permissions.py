@@ -20,3 +20,16 @@ class IsAdminOrReadOnly(permissions.BasePermission):
             request.method == 'GET'
             or request.user.is_superuser
         )
+
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    """
+    Object-level permission to only allow owners of an object to edit it.
+    Assumes the model instance has an `owner` attribute.
+    """
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS\
+                or obj.author == request.user\
+                or request.user.role == 'moderator':
+            return True
+        return False
