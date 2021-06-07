@@ -156,8 +156,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
-        if Review.objects.filter(title=title, author=self.request.user).count() > 0:
-            error = {"error": ["HTTP_400_BAD_REQUEST"]}
+        if Review.objects.filter(
+                title=title, author=self.request.user).count() > 0:
             raise ValidationError('not valid')
             # return Response(error, status=status.HTTP_400_BAD_REQUEST)
         serializer.save(author=self.request.user, title=title)
@@ -182,8 +182,11 @@ class CommentViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
-        title=get_object_or_404(Title, id=self.kwargs.get('title_id'))
-        review=get_object_or_404(Review, id=self.kwargs.get('review_id'))
+        title = get_object_or_404(
+            Title, id=self.kwargs.get('title_id')
+        )
+        review = get_object_or_404(
+            Review, id=self.kwargs.get('review_id'))
         serializer.save(author=self.request.user, title=title, review=review)
 
     def get_queryset(self):
