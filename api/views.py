@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Avg
 
 from . import serializers
+from rest_framework.serializers import ValidationError
 
 from .filters import TitleFilter
 from .models import Category, Genre, Title, Review, Comment
@@ -152,29 +153,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    # def create(self, request, *args, **kwargs):
-    #     text = request.data.get('text')
-    #     score = request.data.get('score')
-    #     title_id = kwargs.get('title_id')
-    #     title = get_object_or_404(Title, id=title_id)
-    #     if Review.objects.filter(title=title,
-    #                              author=request.user).count() > 0:
-    #         error = {
-    #             "error": [
-    #                 "HTTP_403_FORBIDDEN"
-    #             ]
-    #         }
-    #         return Response(error,
-    #                         status=status.HTTP_403_FORBIDDEN)
-    #     user = request.user
-    #     title = get_object_or_404(Title, id=kwargs.get('title_id'))
-    #     rev = Review.objects.filter(title=title, author=self.request.user).count()
-    #     print(rev, title, self.request.user )
-    #     return Response('',
-    #                     status=status.HTTP_201_CREATED)
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
+        if Review.objects.filter(title=title, author=self.request.user).count() > 0:
+            error = {"error": ["HTTP_400_BAD_REQUEST"]}
+            raise ValidationError('not valid')
+            # return Response(error, status=status.HTTP_400_BAD_REQUEST)
         serializer.save(author=self.request.user, title=title)
         new = Review.objects.filter(title=title).aggregate(Avg('score'))
         title.rating = new['score__avg']

@@ -90,12 +90,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('id', 'title', 'pub_date', 'text', 'score', 'author')
         model = Review
-        # validators = [
-        #     UniqueTogetherValidator(
-        #         queryset=Review.objects.all(),
-        #         fields=['author', 'title']
-        #     )
-        # ]
 
 
 class CommentSerializer(serializers.ModelSerializer):
