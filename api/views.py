@@ -153,7 +153,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
         if Review.objects.filter(

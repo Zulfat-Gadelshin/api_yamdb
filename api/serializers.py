@@ -71,7 +71,9 @@ class TitleSerializerRead(serializers.ModelSerializer):
     category = CategorySerializer(many=False, read_only=True)
 
     class Meta:
-        fields = ('id', 'name', 'year', 'category', 'description', 'genre', 'rating')
+        fields = (
+            'id', 'name', 'year', 'category',
+            'description', 'genre', 'rating')
         model = Title
 
 
@@ -107,5 +109,5 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = (
-            'id', 'author', 'text', 'pub_date' , 'review', 'title')
+            'id', 'author', 'text', 'pub_date', 'review', 'title')
         model = Comment
