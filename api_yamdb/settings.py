@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'api',
     'django_filters',
     'rest_framework',
+    'csvimport.app.CSVImportConf',
 ]
 
 MIDDLEWARE = [
