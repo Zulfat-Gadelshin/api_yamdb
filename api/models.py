@@ -1,7 +1,8 @@
 from django.contrib.auth.models import AbstractUser
-from django.db import models
-from django.db.models.fields.related import ForeignKey
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+
+from .validators import validtate_title_year
 
 
 class CustomUser(AbstractUser):
@@ -13,7 +14,7 @@ class CustomUser(AbstractUser):
 
 
 class Genre(models.Model):
-    name = models.CharField(max_length=300, unique=True)
+    name = models.CharField(max_length=300, unique=True, verbose_name='Жанр')
     slug = models.SlugField(unique=True, blank=True)
 
     def __str__(self):
@@ -21,7 +22,10 @@ class Genre(models.Model):
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=300, unique=True)
+    name = models.CharField(
+        max_length=300, unique=True,
+        verbose_name='Категория'
+    )
     slug = models.SlugField(unique=True, blank=True)
 
     def __str__(self):
@@ -29,8 +33,15 @@ class Category(models.Model):
 
 
 class Title(models.Model):
-    name = models.CharField(max_length=300, unique=True)
-    year = models.IntegerField(blank=True)
+    name = models.CharField(
+        max_length=300, unique=True, verbose_name='Название'
+    )
+    year = models.IntegerField(
+        blank=True, verbose_name='Год выхода',
+        db_index=True,
+        validators=[
+            validtate_title_year
+        ])
     category = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
@@ -43,6 +54,7 @@ class Title(models.Model):
     genre = models.ManyToManyField(
         Genre,
         through='GenreTitle',
+        verbose_name='Жанр',
         symmetrical=False,
         blank=True,
         related_name='titles',
@@ -53,8 +65,8 @@ class Title(models.Model):
 
 
 class GenreTitle(models.Model):
-    title_id = ForeignKey(Title, on_delete=models.CASCADE)
-    genre_id = ForeignKey(Genre, on_delete=models.CASCADE)
+    title_id = models.ForeignKey(Title, on_delete=models.CASCADE)
+    genre_id = models.ForeignKey(Genre, on_delete=models.CASCADE)
 
     class Meta:
         constraints = (
