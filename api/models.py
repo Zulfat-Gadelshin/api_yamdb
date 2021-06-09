@@ -6,11 +6,28 @@ from .validators import validtate_title_year
 
 
 class CustomUser(AbstractUser):
-    confirmation_code = models.CharField(max_length=16)
+    class Roles(models.TextChoices):
+        ADMIN = 'admin'
+        MODERATOR = 'moderator'
+        USER = 'user'
+
+    confirmation_code = models.CharField(max_length=16, verbose_name='Код')
     bio = models.CharField(max_length=254, null=True, blank=True)
     role = models.CharField(max_length=50, verbose_name='Название роли',
-                            null=True)
+                            null=True, choices=Roles.choices)
     email = models.EmailField(verbose_name='email', unique=True)
+
+    @property
+    def is_admin(self):
+        return self.is_superuser or self.role == 'admin'
+
+    @property
+    def is_moderator(self):
+        return self.role == 'moderator'
+
+    @property
+    def is_user(self):
+        return self.role == 'user'
 
 
 class Genre(models.Model):

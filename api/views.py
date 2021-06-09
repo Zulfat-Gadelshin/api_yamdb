@@ -6,6 +6,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt import authentication
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
 
@@ -14,7 +15,7 @@ from rest_framework.serializers import ValidationError
 
 from .filters import TitleFilter
 from .models import Category, Genre, Title, Review, Comment
-from .permissions import AdminOrUser, IsAdminOrReadOnly, IsOwnerOrReadOnly
+from .permissions import IsAdmin, IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .viewsets import CustomViewset
 
 User = get_user_model()
@@ -38,22 +39,22 @@ def get_code():
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.UsersSerializer
     authentication_classes = (authentication.JWTAuthentication,)
-    permission_classes = (permissions.IsAuthenticated, AdminOrUser)
+    permission_classes = (permissions.IsAuthenticated, IsAdmin)
     pagination_class = PageNumberPagination
     lookup_field = 'username'
 
-    def destroy(self, request, *args, **kwargs):
-        if self.kwargs.get('username') == 'me':
-            error = {
-                "error": [
-                    "HTTP_405_METHOD_NOT_ALLOWED"
-                ]
-            }
-            return Response(error,
-                            status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    @action(detail=False, methods=('GET', 'PATCH'),
+            permission_classes=[permissions.IsAuthenticated])
+    def me(self, request):
+        cur_user = request.user
+        if request.method == 'GET':
+            serializer = self.get_serializer(cur_user)
+        if request.method == 'PATCH':
+            serializer = self.get_serializer(cur_user, data=request.data,
+                                             partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(data=request.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def perform_create(self, serializer):
         serializer.save(password=get_code(), confirmation_code=get_code())
@@ -61,8 +62,6 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if not self.kwargs:
             return User.objects.all()
-        if self.kwargs.get('username') == 'me':
-            self.kwargs['username'] = self.request.user.username
         username = self.kwargs.get('username')
         return User.objects.filter(username=username)
 
@@ -70,6 +69,8 @@ class UserViewSet(viewsets.ModelViewSet):
 class AuthEmailViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = serializers.UserEmailSerializer
+    authentication_classes = []
+    permission_classes = []
 
     def perform_create(self, serializer):
         username = self.request.data.get('email').split('@')[0]
@@ -80,12 +81,14 @@ class AuthEmailViewSet(viewsets.ModelViewSet):
 class AuthTokenViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = serializers.UserTokenSerializer
+    authentication_classes = []
+    permission_classes = []
 
     def create(self, request, *args, **kwargs):
         email = request.data.get('email')
         code = request.data.get('confirmation_code')
-        if User.objects.filter(email=email,
-                               confirmation_code=code).count() < 1:
+        if not User.objects.filter(email=email,
+                                   confirmation_code=code).exists():
             error = {
                 "error": [
                     "HTTP_403_FORBIDDEN"
@@ -94,6 +97,9 @@ class AuthTokenViewSet(viewsets.ModelViewSet):
             return Response(error,
                             status=status.HTTP_403_FORBIDDEN)
         user = User.objects.filter(email=email, confirmation_code=code)[0]
+        print(user.is_admin)
+        print(user.is_moderator)
+        print(user.is_user)
         token = get_tokens_for_user(user)
 
         return Response(token,
@@ -130,7 +136,7 @@ class TitleViewSet(viewsets.ModelViewSet):
         IsAdminOrReadOnly,
     )
     pagination_class = PageNumberPagination
-    filter_backends = (filters.SearchFilter, DjangoFilterBackend, )
+    filter_backends = (filters.SearchFilter, DjangoFilterBackend,)
     filter_class = TitleFilter
 
     def get_serializer_class(self):
