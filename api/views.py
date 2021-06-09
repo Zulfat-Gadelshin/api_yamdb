@@ -42,6 +42,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsAdmin)
     pagination_class = PageNumberPagination
     lookup_field = 'username'
+    queryset = User.objects.all()
 
     @action(detail=False, methods=('GET', 'PATCH'),
             permission_classes=[permissions.IsAuthenticated])
@@ -56,15 +57,6 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.save(data=request.data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def perform_create(self, serializer):
-        serializer.save(password=get_code(), confirmation_code=get_code())
-
-    def get_queryset(self):
-        if not self.kwargs:
-            return User.objects.all()
-        username = self.kwargs.get('username')
-        return User.objects.filter(username=username)
-
 
 class AuthEmailViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -73,9 +65,8 @@ class AuthEmailViewSet(viewsets.ModelViewSet):
     permission_classes = []
 
     def perform_create(self, serializer):
-        username = self.request.data.get('email').split('@')[0]
-        serializer.save(password=get_code(), username=username, role='user',
-                        confirmation_code=get_code())
+        serializer.get_or_create(password=get_code(), role='user',
+                                 confirmation_code=get_code())
 
 
 class AuthTokenViewSet(viewsets.ModelViewSet):
@@ -85,21 +76,20 @@ class AuthTokenViewSet(viewsets.ModelViewSet):
     permission_classes = []
 
     def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         email = request.data.get('email')
         code = request.data.get('confirmation_code')
         if not User.objects.filter(email=email,
                                    confirmation_code=code).exists():
             error = {
                 "error": [
-                    "HTTP_403_FORBIDDEN"
+                    "HTTP_400_BAD_REQUEST"
                 ]
             }
             return Response(error,
-                            status=status.HTTP_403_FORBIDDEN)
-        user = User.objects.filter(email=email, confirmation_code=code)[0]
-        print(user.is_admin)
-        print(user.is_moderator)
-        print(user.is_user)
+                            status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(email=email, confirmation_code=code).first()
         token = get_tokens_for_user(user)
 
         return Response(token,
