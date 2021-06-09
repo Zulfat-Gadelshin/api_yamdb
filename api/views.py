@@ -1,18 +1,19 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Avg
 from django.utils.crypto import get_random_string
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, permissions, status, viewsets
-from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt import authentication
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.shortcuts import get_object_or_404
+from django.db.models import Avg
 
-from api import serializers
+from . import serializers
+from rest_framework.serializers import ValidationError
 
 from .filters import TitleFilter
-from .models import Category, Comment, Genre, Review, Title
+from .models import Category, Genre, Title, Review, Comment
 from .permissions import AdminOrUser, IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .viewsets import CustomViewset
 
@@ -124,7 +125,7 @@ class GenreViewSet(CustomViewset):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.annotate(rating=Avg('reviews__score'))
     permission_classes = (
         IsAdminOrReadOnly,
     )
@@ -148,44 +149,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
-        queryset = Review.objects.filter(title=title)
-
-        return queryset
-
-    # def create(self, request, *args, **kwargs):
-    #     text = request.data.get('text')
-    #     score = request.data.get('score')
-    #     title_id = kwargs.get('title_id')
-    #     title = get_object_or_404(Title, id=title_id)
-    #     if Review.objects.filter(title=title,
-    #                              author=request.user).count() > 0:
-    #         error = {
-    #             "error": [
-    #                 "HTTP_403_FORBIDDEN"
-    #             ]
-    #         }
-    #         return Response(error,
-    #                         status=status.HTTP_403_FORBIDDEN)
-    #     user = request.user
-    #     title = get_object_or_404(Title, id=kwargs.get('title_id'))
-    #     rev = Review.objects.filter(title=title, author=self.request.user).count()
-    #     print(rev, title, self.request.user )
-    #     return Response('',
-    #                     status=status.HTTP_201_CREATED)
+        return Review.objects.filter(title=title)
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
+        if Review.objects.filter(
+                title=title, author=self.request.user).count() > 0:
+            raise ValidationError('not valid')
         serializer.save(author=self.request.user, title=title)
-        new = Review.objects.filter(title=title).aggregate(Avg('score'))
-        title.rating = new['score__avg']
-        title.save()
-
-    def perform_update(self, serializer):
-        serializer.save()
-        title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
-        new = Review.objects.filter(title=title).aggregate(Avg('score'))
-        title.rating = new['score__avg']
-        title.save()
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -196,14 +167,17 @@ class CommentViewSet(viewsets.ModelViewSet):
     )
     pagination_class = PageNumberPagination
 
+    def perform_create(self, serializer):
+        title = get_object_or_404(
+            Title, id=self.kwargs.get('title_id')
+        )
+        review = get_object_or_404(
+            Review, id=self.kwargs.get('review_id'))
+        serializer.save(author=self.request.user, title=title, review=review)
+
     def get_queryset(self):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
         review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
         queryset = Comment.objects.filter(title=title, review=review)
 
         return queryset
-
-    def perform_create(self, serializer):
-        title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
-        review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
-        serializer.save(author=self.request.user, title=title, review=review)

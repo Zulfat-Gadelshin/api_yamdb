@@ -12,7 +12,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(verbose_name='email', unique=True)
 
 
-class Genre (models.Model):
+class Genre(models.Model):
     name = models.CharField(max_length=300, unique=True)
     slug = models.SlugField(unique=True, blank=True)
 
@@ -20,7 +20,7 @@ class Genre (models.Model):
         return self.name
 
 
-class Category (models.Model):
+class Category(models.Model):
     name = models.CharField(max_length=300, unique=True)
     slug = models.SlugField(unique=True, blank=True)
 
@@ -40,7 +40,6 @@ class Title(models.Model):
         related_name='titles',
     )
     description = models.TextField(blank=True)
-    rating = models.FloatField(null=True)
     genre = models.ManyToManyField(
         Genre,
         through='GenreTitle',
@@ -58,7 +57,11 @@ class GenreTitle(models.Model):
     genre_id = ForeignKey(Genre, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = (('title_id', 'genre_id'))
+        constraints = (
+            models.UniqueConstraint(
+                fields=('title_id', 'genre_id'),
+                name='title_genre'),
+        )
 
 
 class Review(models.Model):
@@ -79,13 +82,6 @@ class Review(models.Model):
         MaxValueValidator(10),
         MinValueValidator(1)
     ])
-
-    '''class Meta:
-        constraints = (
-            models.UniqueConstraint(
-                fields=('author', 'title'),
-                name='only_one_review'),
-        )'''
 
 
 class Comment(models.Model):
