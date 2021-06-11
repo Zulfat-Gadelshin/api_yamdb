@@ -3,10 +3,6 @@ from rest_framework import permissions
 
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        # username = view.kwargs.get('username')
-        # print(username)
-        # if request.method in ('GET', 'PATCH', 'DELETE') and username == 'me':
-        #     return True
         if request.method in ('GET', 'POST', 'PATCH', 'DELETE'):
             if request.user.is_user or request.user.is_moderator:
                 return False
@@ -14,7 +10,6 @@ class IsAdmin(permissions.BasePermission):
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
-
     def has_permission(self, request, view):
         return (
                 request.method == 'GET'

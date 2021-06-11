@@ -95,8 +95,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
-
-
     class Meta:
         fields = ('id', 'title', 'pub_date', 'text', 'score', 'author')
         model = Review
@@ -111,8 +109,6 @@ class ReviewSerializer(serializers.ModelSerializer):
                 author=author).exists() and request.method == 'POST':
             raise ValidationError(f'Вы уже написали ревью на {title}')
         return data
-
-
 
 
 class CommentSerializer(serializers.ModelSerializer):
