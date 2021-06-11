@@ -11,10 +11,8 @@ class IsAdmin(permissions.BasePermission):
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
-        return (
-                request.method == 'GET'
-                or request.user.is_superuser
-        )
+        return (request.method == 'GET'
+                or request.user.is_superuser)
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):

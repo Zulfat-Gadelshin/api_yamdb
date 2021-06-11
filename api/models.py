@@ -112,11 +112,6 @@ class Review(models.Model):
         MinValueValidator(1)
     ])
 
-    # class Meta:
-    #     constraints = [
-    #         models.UniqueConstraint(fields=['title', 'author'], name='unique_review'),
-    #     ]
-
 
 class Comment(models.Model):
     review = models.ForeignKey(Review,
