@@ -149,10 +149,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
-        if Review.objects.filter(
-                title=title, author=self.request.user).count() > 0:
-            raise ValidationError('not valid')
-        serializer.save(author=self.request.user, title=title)
+        if serializer.is_valid():
+            serializer.save(author=self.request.user, title=title)
 
 
 class CommentViewSet(viewsets.ModelViewSet):

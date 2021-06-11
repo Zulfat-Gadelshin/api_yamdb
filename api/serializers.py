@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from .models import Category, Genre, Title, Comment, Review
 
@@ -93,9 +95,24 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+
+
     class Meta:
         fields = ('id', 'title', 'pub_date', 'text', 'score', 'author')
         model = Review
+
+    def validate(self, data):
+        request = self.context['request']
+        author = request.user
+        title_id = self.context.get('view').kwargs['title_id']
+        title = get_object_or_404(Title, id=title_id)
+        if Review.objects.filter(
+            title=title,
+                author=author).exists() and request.method == 'POST':
+            raise ValidationError(f'Вы уже написали ревью на {title}')
+        return data
+
+
 
 
 class CommentSerializer(serializers.ModelSerializer):

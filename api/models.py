@@ -100,17 +100,22 @@ class Review(models.Model):
                               related_name='reviews',
                               verbose_name='Произведение')
     author = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name="reviews")
+        CustomUser, on_delete=models.CASCADE, related_name='reviews')
 
-    text = models.TextField("Текст отзыва")
+    text = models.TextField('Текст отзыва')
     pub_date = models.DateTimeField(
-        "Дата добавления", auto_now_add=True, db_index=True
+        'Дата добавления', auto_now_add=True, db_index=True
     )
 
-    score = models.IntegerField("Оценка", validators=[
+    score = models.IntegerField('Оценка', validators=[
         MaxValueValidator(10),
         MinValueValidator(1)
     ])
+
+    # class Meta:
+    #     constraints = [
+    #         models.UniqueConstraint(fields=['title', 'author'], name='unique_review'),
+    #     ]
 
 
 class Comment(models.Model):
@@ -125,9 +130,9 @@ class Comment(models.Model):
                               verbose_name='Произведение')
 
     author = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name="comments")
+        CustomUser, on_delete=models.CASCADE, related_name='comments')
 
-    text = models.TextField("Текст комментария")
+    text = models.TextField('Текст комментария')
     pub_date = models.DateTimeField(
-        "Дата добавления", auto_now_add=True, db_index=True
+        'Дата добавления', auto_now_add=True, db_index=True
     )
